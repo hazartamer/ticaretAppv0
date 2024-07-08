@@ -6,8 +6,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class TicaretAppV0Application {
 
-	public static void main(String[] args) {
-		SpringApplication.run(TicaretAppV0Application.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(TicaretAppV0Application.class, args);
+    }
 
 }
