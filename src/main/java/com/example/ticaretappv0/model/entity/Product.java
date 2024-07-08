@@ -1,4 +1,4 @@
-package com.example.ticaretappv0.entity;
+package com.example.ticaretappv0.model.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
