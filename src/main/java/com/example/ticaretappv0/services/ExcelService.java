@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -31,11 +32,13 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class ExcelService {
+    final UserService service;
     final CategoryRepository repository;
 
     public List<List<String>> readExcel(RequestDto requestDto) throws IOException {
         List<List<String>> data = new ArrayList<>();
-        requestDto.setFileType(FileType.CATEGORY);
+        List<Object> insntaceList = new ArrayList<>();
+
 
         try (InputStream is = requestDto.getFile().getInputStream()) {
             Workbook workbook = new XSSFWorkbook(is);
@@ -46,6 +49,7 @@ public class ExcelService {
 
             // Her satırı oku ve veritabanına kaydet
             for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) { // Başlık satırını atla
+
                 Row row = sheet.getRow(rowIndex);
                 List<String> rowData = new ArrayList<>();
                 for (int colIndex = 0; colIndex < row.getPhysicalNumberOfCells(); colIndex++) {
@@ -57,38 +61,20 @@ public class ExcelService {
 
 
                 // create instance from class type reflection
-                Class<?> clazz = getReflectionClass(requestDto.getFileType());
-                clazz.getName();
-                Category excelData = new Category();
-                populateCategoryFromRow(columnIndexes, row, clazz);
-                repository.save(excelData);
+                Class<?> clazz = requestDto.getFileType().getExcelModelClass();
+                Object instance = getInstance(clazz);
+
+                populateCategoryFromRow(columnIndexes, row, instance);
+                insntaceList.add(instance);
             }
         }
+        service.deneme(insntaceList);
         return data;
     }
 
-    private Class<?> getReflectionClass(FileType fileType) {
-        try {
-            Class<?> clazz = fileType.getExcelModelClass();
-            if (clazz == CategoryExportDto.class) {
-                return Class.forName("com.example.ticaretappv0.model.dto.CategoryExportDto");
-            } else if (clazz == ProductExportDto.class) {
-                return Class.forName("com.example.ProductExportDto");
-            } else if (clazz == InventoryExportDto.class) {
-                return Class.forName("com.example.InventoryExportDto");
-            } else if (clazz == UserExportDto.class) {
-                return Class.forName("com.example.UserExportDto");
-            } else {
-                throw new IllegalArgumentException("Unsupported FileType: " + fileType.getExcelModelClass().getName());
-            }
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            throw new RuntimeException("Error creating instance of class", e);
-        }
-    }
 
-    private void populateCategoryFromRow(Map<String, Integer> columnIndexes, Row row, Class<?> excelData) {
-        for (Field field : Category.class.getDeclaredFields()) {
+    private void populateCategoryFromRow(Map<String, Integer> columnIndexes, Row row, Object instance) {
+        for (Field field : instance.getClass().getDeclaredFields()) {
             if (field.isAnnotationPresent(ExcelColumn.class)) {
                 ExcelColumn annotation = field.getAnnotation(ExcelColumn.class);
                 String columnName = annotation.name(); //Name
@@ -97,7 +83,7 @@ public class ExcelService {
                     Cell cell = row.getCell(colIndex);
                     field.setAccessible(true);
                     try {
-                        setFieldValueFromCell(excelData, field, cell);
+                        setFieldValueFromCell(instance, field, cell);
                     } catch (IllegalAccessException e) {
                         e.printStackTrace(); // Hata durumunda hata ayıklama çıktısını yazdır
                     }
@@ -106,23 +92,23 @@ public class ExcelService {
         }
     }
 
-    private void setFieldValueFromCell(Class<?> excelData, Field field, Cell cell) throws IllegalAccessException {
+    private void setFieldValueFromCell(Object instance, Field field, Cell cell) throws IllegalAccessException {
         if (cell != null) {
             switch (cell.getCellType()) {
                 case STRING:
                     if (field.getType().equals(String.class)) {
-                        field.set(excelData, cell.getStringCellValue());
+                        field.set(instance, cell.getStringCellValue());
                     }
                     break;
                 case NUMERIC:
                     if (field.getType().equals(Integer.class) || field.getType().equals(int.class)) {
-                        field.set(excelData, (int) cell.getNumericCellValue());
+                        field.set(instance, (int) cell.getNumericCellValue());
                     } else if (field.getType().equals(Double.class)) {
-                        field.set(excelData, cell.getNumericCellValue());
+                        field.set(instance, cell.getNumericCellValue());
                     }
                     break;
                 default:
-                    field.set(excelData, cell.toString());
+                    field.set(instance, cell.toString());
                     break;
             }
         }
@@ -137,4 +123,27 @@ public class ExcelService {
         }
         return columnIndexes;
     }
+
+    private <T>  T getInstance(Class<T> clazz){
+        T tObject;
+        try{
+            Constructor<T> declaredConstructor = clazz.getDeclaredConstructor();
+
+            if(!(declaredConstructor.canAccess(null))){
+                declaredConstructor.setAccessible(true);
+            }
+            tObject = declaredConstructor.newInstance();
+
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        } catch (InstantiationException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+        return tObject;
+    }
+
 }

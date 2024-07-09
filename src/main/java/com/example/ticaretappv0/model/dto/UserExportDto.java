@@ -6,10 +6,10 @@ import lombok.Data;
 @Data
 public class UserExportDto {
 
-    @ExcelColumn(name = "FirstName")
-    private String firstName;
-    @ExcelColumn(name = "LastName")
-    private String lastName;
+    @ExcelColumn(name = "Name")
+    private String name;
+    @ExcelColumn(name = "Age")
+    private int age;
     @ExcelColumn(name = "Email")
     private String email;
     @ExcelColumn(name = "Password")
