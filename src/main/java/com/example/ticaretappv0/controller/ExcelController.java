@@ -19,12 +19,14 @@ public class ExcelController {
     private ExcelService excelService;
 
     @PostMapping("/upload")
-    public ResponseEntity<?> uploadExcelFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> uploadExcelFile(@RequestParam("file") MultipartFile file,
+                                             FileType fileType) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("Please upload a valid Excel file.");
         }
         RequestDto requestDto = new RequestDto();
         requestDto.setFile(file);
+        requestDto.setFileType(fileType);
         try {
             List<List<String>> data = excelService.readExcel(requestDto);
             return ResponseEntity.ok(data);
