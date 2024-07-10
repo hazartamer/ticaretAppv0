@@ -2,22 +2,17 @@ package com.example.ticaretappv0.services;
 
 
 import com.example.ticaretappv0.anatation.ExcelColumn;
-import com.example.ticaretappv0.model.dto.CategoryExportDto;
-import com.example.ticaretappv0.model.dto.InventoryExportDto;
-import com.example.ticaretappv0.model.dto.ProductExportDto;
-import com.example.ticaretappv0.model.dto.UserExportDto;
 import com.example.ticaretappv0.model.dto.request.RequestDto;
-import com.example.ticaretappv0.model.entity.Category;
-import com.example.ticaretappv0.model.enums.FileType;
 import com.example.ticaretappv0.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
+
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
+
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,49 +26,36 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class ExcelService {
+public class ExcelService<T> {
     final UserService service;
     final CategoryRepository repository;
 
-    public List<List<String>> readExcel(RequestDto requestDto) throws IOException {
-        List<List<String>> data = new ArrayList<>();
-        List<Object> insntaceList = new ArrayList<>();
 
+    public List<T> readExcel(RequestDto requestDto) throws IOException {
+        List<T> insntaceList = new ArrayList<>();
 
         try (InputStream is = requestDto.getFile().getInputStream()) {
             Workbook workbook = new XSSFWorkbook(is);
             Sheet sheet = workbook.getSheetAt(0);
 
-            // Başlık satırındaki sütun isimlerini ve indekslerini haritaya ekle
             Map<String, Integer> columnIndexes = getTitleMap(sheet);
 
-            // Her satırı oku ve veritabanına kaydet
-            for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) { // Başlık satırını atla
-
+            for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
                 Row row = sheet.getRow(rowIndex);
-                List<String> rowData = new ArrayList<>();
-                for (int colIndex = 0; colIndex < row.getPhysicalNumberOfCells(); colIndex++) {
-                    Cell cell = row.getCell(colIndex);
-                    System.out.println(cell);
-                    rowData.add(cell.toString());
-                }
-                data.add(rowData);
-
 
                 // create instance from class type reflection
                 Class<?> clazz = requestDto.getFileType().getExcelModelClass();
-                Object instance = getInstance(clazz);
+                T instance = (T) getInstance(clazz);
 
-                populateCategoryFromRow(columnIndexes, row, instance);
+                populateEntityFromRow(columnIndexes, row, instance);
                 insntaceList.add(instance);
             }
         }
-        service.deneme(insntaceList);
-        return data;
+        return insntaceList;
     }
 
 
-    private void populateCategoryFromRow(Map<String, Integer> columnIndexes, Row row, Object instance) {
+    private void populateEntityFromRow(Map<String, Integer> columnIndexes, Row row, Object instance) {
         for (Field field : instance.getClass().getDeclaredFields()) {
             if (field.isAnnotationPresent(ExcelColumn.class)) {
                 ExcelColumn annotation = field.getAnnotation(ExcelColumn.class);

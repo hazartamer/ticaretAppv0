@@ -1,64 +1,39 @@
 package com.example.ticaretappv0.services;
 
+import com.example.ticaretappv0.model.dto.UserExportDto;
 import com.example.ticaretappv0.model.entity.Category;
 import com.example.ticaretappv0.model.entity.User;
 import com.example.ticaretappv0.repository.CategoryRepository;
 import com.example.ticaretappv0.repository.UserRepository;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 @Service
-public class UserService {
-    private CategoryRepository repository;
+@AllArgsConstructor
+public class UserService implements TypeService<UserExportDto> {
+    private UserRepository repository;
 
 
-    public void deneme(List<Object> instanceList) {
-        List<Category> userList = new ArrayList<>();
-        Category category = new Category();
-
-        List<Object> objects = new ArrayList<>();
-
-        for (Object obj : instanceList) {
-            Class<?> clazz = obj.getClass();
-
-            // Nesnenin tüm alanlarını al
-            Field[] fields = clazz.getDeclaredFields();
-
-            for (Field field : fields) {
-                field.setAccessible(true);
-                try {
-                    // Alanın değerini al ve yazdır
-                    Object value = field.get(obj);
-                    System.out.println(field.getName() + " = " + value);
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
+    @Override
+    public void saveAll(List entities) {
+        List<User> userList = new ArrayList<>();
+        for (Object obj : entities) {
+            if (obj instanceof UserExportDto) { // DTO türünü kontrol et
+                UserExportDto userDto = (UserExportDto) obj;
+                User user = new User();
+                user.setFirstName(userDto.getName());
+                user.setEmail(userDto.getEmail());
+                user.setAddress(userDto.getAddress());
+                userList.add(user);
             }
         }
-
+        repository.saveAll(userList);
     }
-    private static void printFieldValues(Object obj) {
-        // Nesnenin sınıfını al
-        Class<?> clazz = obj.getClass();
-
-        // Nesnenin tüm alanlarını al
-        Field[] fields = clazz.getDeclaredFields();
-
-        for (Field field : fields) {
-            field.setAccessible(true);
-            try {
-                // Alanın değerini al ve yazdır
-                Object value = field.get(obj);
-                System.out.println(field.getName() + " = " + value);
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
 }
 

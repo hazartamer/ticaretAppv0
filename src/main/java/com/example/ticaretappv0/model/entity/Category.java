@@ -18,9 +18,6 @@ public class Category {
     private long id;
     @ExcelColumn(name = "Name")
     private String name;
-    @ExcelColumn(name = "Age")
-    private int age;
-    @ExcelColumn(name = "Address")
-    private String address;
+
     //separation of concerns
 }
