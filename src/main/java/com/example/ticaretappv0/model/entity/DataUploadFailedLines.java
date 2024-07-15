@@ -1,23 +1,26 @@
 package com.example.ticaretappv0.model.entity;
 
-import com.example.ticaretappv0.anatation.ExcelColumn;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-@Entity
-@Getter
-@Setter
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Category {
+@Entity
+@Builder
+public class DataUploadFailedLines {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
-    @ExcelColumn(name = "Name", required = true)
-    private String name;
 
-    //separation of concerns
+    private int line;
+
+    private String titleName;
+
+    @ManyToOne
+    @JoinColumn(name = "data_upload_fail")
+    private DataUploadFail dataUploadFail;
 }

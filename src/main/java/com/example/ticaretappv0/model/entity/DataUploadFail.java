@@ -1,23 +1,23 @@
 package com.example.ticaretappv0.model.entity;
 
-import com.example.ticaretappv0.anatation.ExcelColumn;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-@Entity
-@Getter
-@Setter
+import java.util.List;
+
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Category {
+@Entity
+public class DataUploadFail {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
-    @ExcelColumn(name = "Name", required = true)
-    private String name;
 
-    //separation of concerns
+    private String FileName;
+
+    @OneToMany(mappedBy = "dataUploadFail" , fetch = FetchType.LAZY , cascade = CascadeType.ALL)
+    private List<DataUploadFailedLines> failedLines;
 }

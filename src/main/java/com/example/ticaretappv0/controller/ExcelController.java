@@ -1,36 +1,37 @@
 package com.example.ticaretappv0.controller;
 
+
 import com.example.ticaretappv0.model.dto.request.RequestDto;
 import com.example.ticaretappv0.model.enums.FileType;
-import com.example.ticaretappv0.services.ExcelService;
-import com.example.ticaretappv0.services.TypeService;
-import com.example.ticaretappv0.services.UserService;
-import lombok.AllArgsConstructor;
-import org.apache.poi.sl.usermodel.TextRun;
-import org.apache.poi.ss.formula.functions.T;
-import org.springframework.context.ApplicationContext;
+import com.example.ticaretappv0.services.CommonSetService;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
-@AllArgsConstructor
 @RestController
 @RequestMapping("/excel")
 public class ExcelController {
-    private ExcelService excelService;
-    private final ApplicationContext applicationContext;
+    private CommonSetService commonSetService;
+
+    public ExcelController(CommonSetService commonSetService) {
+        this.commonSetService = commonSetService;
+    }
+
+    private final String uploadDir = "/Users/salih/Desktop";
+
 
     @PostMapping("/upload")
     public ResponseEntity<?> uploadExcelFile(@RequestParam("file") MultipartFile file,
-                                             FileType fileType) {
+                                             FileType fileType , RedirectAttributes redirectAttributes) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("Please upload a valid Excel file.");
         }
@@ -38,15 +39,17 @@ public class ExcelController {
         requestDto.setFile(file);
         requestDto.setFileType(fileType);
 
+
+        Path path = Paths.get(uploadDir, file.getOriginalFilename());
+
+        // Dosyayı belirli bir dizine kaydet
         try {
-            List<T> data = excelService.readExcel(requestDto);
-            TypeService<?> service = (TypeService<?>) applicationContext.getBean(fileType.getServiceClass());
-            service.saveAll(data);
-            return ResponseEntity.ok(data);
+            Files.copy(file.getInputStream(), path);
         } catch (IOException e) {
-            return ResponseEntity.status(500).body("An error occurred while processing the Excel file.");
+            throw new RuntimeException(e);
         }
 
 
+        return ResponseEntity.ok(commonSetService.organization(requestDto));
     }
 }

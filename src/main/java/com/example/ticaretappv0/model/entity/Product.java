@@ -27,5 +27,4 @@ public class Product {
     @JoinColumn(name = "inventory_id")
     private Inventory inventory;
 
-
 }

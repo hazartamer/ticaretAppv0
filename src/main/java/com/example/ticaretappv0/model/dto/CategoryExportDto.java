@@ -4,11 +4,11 @@ import com.example.ticaretappv0.anatation.ExcelColumn;
 import lombok.Data;
 
 @Data
-public class CategoryExportDto {
-    @ExcelColumn(name = "Name")
+public class CategoryExportDto extends AbstractExcelDto{
+    @ExcelColumn(name = "Name" , required = true)
     private String name;
-    @ExcelColumn(name = "Age")
+    @ExcelColumn(name = "Age" , required = true)
     private int age;
-    @ExcelColumn(name = "Address")
+    @ExcelColumn(name = "Address", required = true)
     private String address;
 }

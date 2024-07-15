@@ -7,17 +7,17 @@ import lombok.Data;
 
 
 @Data
-public class ProductExportDto {
+public class ProductExportDto extends AbstractExcelDto{
 
-    @ExcelColumn(name = "Name")
+    @ExcelColumn(name = "Name", required = true)
     private String name;
 
-    @ExcelColumn(name = "UnitPrice")
+    @ExcelColumn(name = "UnitPrice", required = true)
     private String unitPrice;
 
-    @ExcelColumn(name = "Category")
+    @ExcelColumn(name = "Category", required = true)
     private Category category;
 
-    @ExcelColumn(name = "Inventory")
+    @ExcelColumn(name = "Inventory", required = true)
     private Inventory inventory;
 }

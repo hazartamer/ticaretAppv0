@@ -1,9 +1,8 @@
 package com.example.ticaretappv0.services;
-
-
 import com.example.ticaretappv0.anatation.ExcelColumn;
+import com.example.ticaretappv0.handling.exceptions.DataParserException;
+import com.example.ticaretappv0.model.dto.AbstractExcelDto;
 import com.example.ticaretappv0.model.dto.request.RequestDto;
-import com.example.ticaretappv0.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 
 import org.apache.poi.ss.usermodel.Cell;
@@ -11,7 +10,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 
 import java.io.IOException;
@@ -24,17 +23,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Service
+
+@Component
 @RequiredArgsConstructor
-public class ExcelService<T> {
-    final UserService service;
-    final CategoryRepository repository;
+public class ExcelParser<T extends AbstractExcelDto> {
 
-
-    public List<T> readExcel(RequestDto requestDto) throws IOException {
+    public List<T> readExcel(RequestDto requestDto) throws IOException, DataParserException {
         List<T> insntaceList = new ArrayList<>();
 
-        try (InputStream is = requestDto.getFile().getInputStream()) {
+            InputStream is = requestDto.getFile().getInputStream();
             Workbook workbook = new XSSFWorkbook(is);
             Sheet sheet = workbook.getSheetAt(0);
 
@@ -44,37 +41,57 @@ public class ExcelService<T> {
                 Row row = sheet.getRow(rowIndex);
 
                 // create instance from class type reflection
-                Class<?> clazz = requestDto.getFileType().getExcelModelClass();
+                Class<? extends AbstractExcelDto> clazz = (Class<? extends AbstractExcelDto>) requestDto.getFileType().getExcelModelClass();
                 T instance = (T) getInstance(clazz);
 
                 populateEntityFromRow(columnIndexes, row, instance);
                 insntaceList.add(instance);
             }
-        }
+
         return insntaceList;
     }
 
 
-    private void populateEntityFromRow(Map<String, Integer> columnIndexes, Row row, Object instance) {
+    private void populateEntityFromRow(Map<String, Integer> columnIndexes, Row row, T instance)  {
         for (Field field : instance.getClass().getDeclaredFields()) {
             if (field.isAnnotationPresent(ExcelColumn.class)) {
+
                 ExcelColumn annotation = field.getAnnotation(ExcelColumn.class);
+
                 String columnName = annotation.name(); //Name
+
                 if (columnIndexes.containsKey(columnName)) {
                     int colIndex = columnIndexes.get(columnName);
                     Cell cell = row.getCell(colIndex);
                     field.setAccessible(true);
+
+
                     try {
                         setFieldValueFromCell(instance, field, cell);
-                    } catch (IllegalAccessException e) {
+                    }
+
+                    catch (IllegalAccessException e) {
                         e.printStackTrace(); // Hata durumunda hata ayıklama çıktısını yazdır
                     }
+                    try {
+                        if (annotation.required()== true && cell == null) {
+                            instance.setRowId(row.getRowNum());
+                            instance.setFailed(true);
+                            instance.setDescription("field is missing");
+                            throw new DataParserException("field is missing : " + field.getName());
+                        }
+                    }catch (DataParserException exception) {
+                        exception.getMessage();
+                    }
+
                 }
+
+
             }
         }
     }
 
-    private void setFieldValueFromCell(Object instance, Field field, Cell cell) throws IllegalAccessException {
+    private void setFieldValueFromCell(T instance, Field field, Cell cell) throws IllegalAccessException {
         if (cell != null) {
             switch (cell.getCellType()) {
                 case STRING:
@@ -94,6 +111,7 @@ public class ExcelService<T> {
                     break;
             }
         }
+
     }
 
     private Map<String, Integer> getTitleMap(Sheet sheet) {
@@ -106,7 +124,7 @@ public class ExcelService<T> {
         return columnIndexes;
     }
 
-    private <T>  T getInstance(Class<T> clazz){
+    private <T extends AbstractExcelDto>  T getInstance(Class<T> clazz){
         T tObject;
         try{
             Constructor<T> declaredConstructor = clazz.getDeclaredConstructor();
