@@ -7,5 +7,6 @@ import org.springframework.web.multipart.MultipartFile;
 @Data
 public class RequestDto {
     private FileType fileType;
-    private MultipartFile file;
+    private MultipartFile file; // bilgisayara indirmiş olduğumuz dosyayı seçicez
+
 }

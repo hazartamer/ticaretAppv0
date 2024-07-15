@@ -13,11 +13,13 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Component;
 
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,11 +30,13 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ExcelParser<T extends AbstractExcelDto> {
 
-    public List<T> readExcel(RequestDto requestDto) throws IOException, DataParserException {
+    public List<T> readExcel(RequestDto requestDto , Path p1) throws IOException, DataParserException {
         List<T> insntaceList = new ArrayList<>();
 
-            InputStream is = requestDto.getFile().getInputStream();
-            Workbook workbook = new XSSFWorkbook(is);
+
+            FileInputStream fis = new FileInputStream(p1.toFile());
+            //InputStream is = requestDto.getFile().getInputStream();
+            Workbook workbook = new XSSFWorkbook(fis);
             Sheet sheet = workbook.getSheetAt(0);
 
             Map<String, Integer> columnIndexes = getTitleMap(sheet);
